@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C — Aurora Morph | penncurtis.com</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #070712;
+      --text: #f0f0ff;
+      --muted: #3a3a60;
+      --muted2: #6060a0;
+      --purple: #7c3aed;
+      --magenta: #d946ef;
+      --cyan: #06b6d4;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      cursor: none;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ── Aurora Background ── */
+    .aurora {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      mix-blend-mode: screen;
+      animation: float var(--dur, 12s) ease-in-out infinite var(--delay, 0s);
+    }
+    .blob-1 {
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.5) 0%, transparent 70%);
+      top: -200px; left: -200px;
+      --dur: 14s; --delay: 0s;
+    }
+    .blob-2 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(217, 70, 239, 0.4) 0%, transparent 70%);
+      top: 30%; right: -150px;
+      --dur: 10s; --delay: -4s;
+    }
+    .blob-3 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.35) 0%, transparent 70%);
+      bottom: -100px; left: 30%;
+      --dur: 16s; --delay: -8s;
+    }
+    .blob-4 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.3) 0%, transparent 70%);
+      bottom: 20%; left: -100px;
+      --dur: 12s; --delay: -2s;
+    }
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+      25% { transform: translate(30px, -40px) scale(1.08) rotate(5deg); }
+      50% { transform: translate(-20px, 30px) scale(0.95) rotate(-3deg); }
+      75% { transform: translate(40px, 20px) scale(1.05) rotate(2deg); }
+    }
+
+    /* ── Noise overlay ── */
+    .noise {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+    }
+
+    /* ── Cursor ── */
+    #cursor {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.9);
+      position: fixed;
+      top: 0; left: 0;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 9999;
+      mix-blend-mode: difference;
+      transition: width 0.3s, height 0.3s;
+    }
+    #cursor-trail {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.2);
+      position: fixed;
+      top: 0; left: 0;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 9998;
+      transition: width 0.4s, height 0.4s, border-color 0.3s;
+    }
+    #cursor.big { width: 28px; height: 28px; }
+    #cursor-trail.big { width: 64px; height: 64px; border-color: rgba(217,70,239,0.5); }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      padding: 28px 52px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+    }
+    .nav-glass {
+      position: absolute;
+      inset: 0;
+      background: rgba(7, 7, 18, 0.4);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      position: relative;
+      font-family: 'Instrument Serif', serif;
+      font-size: 1.3rem;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.01em;
+    }
+    .logo em { font-style: italic; color: rgba(217, 70, 239, 0.9); }
+    .nav-links {
+      position: relative;
+      display: flex;
+      gap: 36px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--muted2);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 300;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 0 52px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      backdrop-filter: blur(12px);
+      font-size: 0.75rem;
+      color: var(--muted2);
+      letter-spacing: 0.06em;
+      margin-bottom: 36px;
+      opacity: 0;
+      animation: riseIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+    }
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--magenta);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(64px, 11vw, 160px);
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      opacity: 0;
+      animation: riseIn 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+    }
+    .hero-title em {
+      font-style: italic;
+      background: linear-gradient(135deg, var(--purple), var(--magenta) 50%, var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      width: 100%;
+      margin-top: 52px;
+      opacity: 0;
+      animation: riseIn 0.9s ease 0.9s forwards;
+    }
+    .hero-desc {
+      max-width: 440px;
+      font-size: 1rem;
+      color: var(--muted2);
+      line-height: 1.75;
+      font-weight: 300;
+    }
+    .hero-links { display: flex; gap: 12px; }
+    .pill {
+      padding: 12px 24px;
+      border-radius: 100px;
+      font-size: 0.82rem;
+      text-decoration: none;
+      font-weight: 400;
+      transition: all 0.3s ease;
+    }
+    .pill-fill {
+      background: linear-gradient(135deg, var(--purple), var(--magenta));
+      color: #fff;
+    }
+    .pill-fill:hover { opacity: 0.85; transform: translateY(-2px); }
+    .pill-outline {
+      border: 1px solid var(--border);
+      color: var(--muted2);
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+    }
+    .pill-outline:hover { border-color: rgba(217,70,239,0.4); color: var(--text); }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Divider ── */
+    .divider {
+      position: relative;
+      z-index: 2;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border) 30%, var(--border) 70%, transparent);
+      margin: 0 52px;
+    }
+
+    /* ── Work ── */
+    .work {
+      position: relative;
+      z-index: 2;
+      padding: 120px 52px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 52px;
+    }
+    .section-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .section-title em { font-style: italic; color: var(--muted2); }
+    .see-all {
+      font-size: 0.8rem;
+      color: var(--muted2);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: color 0.2s;
+    }
+    .see-all:hover { color: var(--text); }
+
+    .work-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 700px) { .work-grid { grid-template-columns: 1fr; } }
+
+    .work-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      backdrop-filter: blur(16px);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.4s, background 0.4s, transform 0.3s;
+      text-decoration: none;
+    }
+    .work-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(217,70,239,0.08));
+      opacity: 0;
+      transition: opacity 0.4s;
+      border-radius: 20px;
+    }
+    .work-card:hover {
+      border-color: rgba(217,70,239,0.3);
+      transform: translateY(-4px);
+    }
+    .work-card:hover::before { opacity: 1; }
+
+    .card-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--purple), var(--magenta));
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+    .card-cat {
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted2);
+      margin-bottom: 10px;
+    }
+    .card-name {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(1.3rem, 2.5vw, 1.9rem);
+      color: var(--text);
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+    .card-desc {
+      font-size: 0.85rem;
+      color: var(--muted2);
+      line-height: 1.65;
+      font-weight: 300;
+    }
+    .card-arrow {
+      position: absolute;
+      top: 36px;
+      right: 36px;
+      color: var(--muted);
+      font-size: 1.1rem;
+      transition: color 0.3s, transform 0.3s;
+    }
+    .work-card:hover .card-arrow { color: var(--magenta); transform: translate(4px, -4px); }
+
+    /* ── About ── */
+    .about {
+      position: relative;
+      z-index: 2;
+      padding: 80px 52px 120px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+    @media (max-width: 800px) { .about { grid-template-columns: 1fr; gap: 40px; } }
+
+    .about-heading {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(2.5rem, 5vw, 5rem);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .about-heading em {
+      display: block;
+      font-style: italic;
+      background: linear-gradient(135deg, var(--magenta), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .about-text {
+      font-size: 0.95rem;
+      color: var(--muted2);
+      line-height: 1.85;
+      font-weight: 300;
+      margin-bottom: 18px;
+    }
+    .about-text strong { color: var(--text); font-weight: 400; }
+
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 28px;
+    }
+    .skill-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      backdrop-filter: blur(12px);
+      transition: border-color 0.3s;
+    }
+    .skill-item:hover { border-color: rgba(217,70,239,0.3); }
+    .skill-name {
+      font-size: 0.82rem;
+      color: var(--text);
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .skill-desc { font-size: 0.72rem; color: var(--muted2); }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 2;
+      padding: 48px 52px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .foot-copy { font-size: 0.78rem; color: var(--muted2); }
+    .socials { display: flex; gap: 24px; }
+    .socials a {
+      font-size: 0.78rem;
+      color: var(--muted2);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .socials a:hover { color: var(--magenta); }
+
+    /* ── Reveal ── */
+    .reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.9s ease, transform 0.9s ease; }
+    .reveal.on { opacity: 1; transform: none; }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+
+    /* ── Back ── */
+    .back {
+      position: fixed; bottom: 28px; right: 28px;
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      color: var(--muted2);
+      text-decoration: none;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      padding: 10px 18px;
+      border-radius: 100px;
+      z-index: 200;
+      border: 1px solid var(--border);
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .back:hover { color: var(--text); border-color: rgba(217,70,239,0.4); }
+  </style>
+</head>
+<body>
+
+  <!-- Aurora -->
+  <div class="aurora">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="blob blob-4"></div>
+  </div>
+  <div class="noise"></div>
+
+  <!-- Cursor -->
+  <div id="cursor"></div>
+  <div id="cursor-trail"></div>
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-glass"></div>
+    <a href="#" class="logo">Penn <em>Curtis</em></a>
+    <ul class="nav-links">
+      <li><a href="#work">Work</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      Available for work · New York City
+    </div>
+    <h1 class="hero-title">
+      Designing<br>
+      the <em>space</em><br>
+      between.
+    </h1>
+    <div class="hero-footer">
+      <p class="hero-desc">Product designer and developer. I build things that are beautiful to look at and satisfying to use — from Figma to full-stack.</p>
+      <div class="hero-links">
+        <a href="#work" class="pill pill-fill">View work</a>
+        <a href="#about" class="pill pill-outline">About</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- Work -->
+  <section class="work" id="work">
+    <div class="section-header reveal">
+      <h2 class="section-title">Selected <em>work</em></h2>
+      <a href="#" class="see-all">All projects →</a>
+    </div>
+    <div class="work-grid">
+      <a href="#" class="work-card reveal reveal-delay-1">
+        <div class="card-icon">✦</div>
+        <span class="card-arrow">↗</span>
+        <div class="card-cat">AI App</div>
+        <div class="card-name">Resume Builder</div>
+        <div class="card-desc">AI-powered tool that generates tailored resumes from a conversation.</div>
+      </a>
+      <a href="#" class="work-card reveal reveal-delay-2">
+        <div class="card-icon" style="background: linear-gradient(135deg, #06b6d4, #7c3aed)">◈</div>
+        <span class="card-arrow">↗</span>
+        <div class="card-cat">iOS App</div>
+        <div class="card-name">Minute of Math</div>
+        <div class="card-desc">A daily math challenge app for iOS designed to keep your mind sharp.</div>
+      </a>
+      <a href="#" class="work-card reveal reveal-delay-1">
+        <div class="card-icon" style="background: linear-gradient(135deg, #d946ef, #7c3aed)">◇</div>
+        <span class="card-arrow">↗</span>
+        <div class="card-cat">Web App</div>
+        <div class="card-name">News Aggregator</div>
+        <div class="card-desc">Pulls and curates headlines from across the web into a single clean feed.</div>
+      </a>
+      <a href="#" class="work-card reveal reveal-delay-2">
+        <div class="card-icon" style="background: linear-gradient(135deg, #7c3aed, #06b6d4)">○</div>
+        <span class="card-arrow">↗</span>
+        <div class="card-cat">Python</div>
+        <div class="card-name">Athena</div>
+        <div class="card-desc">A command-line tool built in Python for intelligent task automation.</div>
+      </a>
+    </div>
+  </section>
+
+  <div class="divider" style="margin: 0 52px;"></div>
+
+  <!-- About -->
+  <section class="about" id="about">
+    <div>
+      <h2 class="about-heading reveal">
+        Craft.<br>
+        Code.<br>
+        <em>Curiosity.</em>
+      </h2>
+    </div>
+    <div>
+      <p class="about-text reveal">I'm <strong>Penn Curtis</strong>, a product designer and developer in New York City. I'm drawn to the intersection of design and engineering — where beautiful things are also well-built things.</p>
+      <p class="about-text reveal reveal-delay-1">From <strong>Figma</strong> prototypes to shipped iOS apps, I move across the full stack of product creation. I've built AI tools, games, iOS apps, web scrapers, and more.</p>
+      <div class="skills-grid reveal reveal-delay-2">
+        <div class="skill-item">
+          <div class="skill-name">Product Design</div>
+          <div class="skill-desc">Figma, UX, prototyping</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Frontend Dev</div>
+          <div class="skill-desc">HTML, CSS, React, JS</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Backend / AI</div>
+          <div class="skill-desc">Python, Flask, APIs</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">iOS</div>
+          <div class="skill-desc">Swift, App Store</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span class="foot-copy">© 2026 Penn Curtis</span>
+    <div class="socials">
+      <a href="#">Instagram</a>
+      <a href="#">LinkedIn</a>
+      <a href="#">GitHub</a>
+      <a href="#">Dev.to</a>
+    </div>
+  </footer>
+
+  <a href="index.html" class="back">← Concepts</a>
+
+  <script>
+    // ── Cursor ──
+    const cur = document.getElementById('cursor');
+    const trail = document.getElementById('cursor-trail');
+    let mx = 0, my = 0, tx = 0, ty = 0;
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+    function animCursor() {
+      cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+      tx += (mx - tx) * 0.1; ty += (my - ty) * 0.1;
+      trail.style.left = tx + 'px'; trail.style.top = ty + 'px';
+      requestAnimationFrame(animCursor);
+    }
+    animCursor();
+    document.querySelectorAll('a, .skill-item').forEach(el => {
+      el.addEventListener('mouseenter', () => { cur.classList.add('big'); trail.classList.add('big'); });
+      el.addEventListener('mouseleave', () => { cur.classList.remove('big'); trail.classList.remove('big'); });
+    });
+
+    // ── Scroll reveal ──
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('on'); });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  </script>
+</body>
+</html>

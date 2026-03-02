@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>penncurtis.com — Direction Concepts</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #080808;
+      color: #e8e8e8;
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .eyebrow {
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #444;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .sub {
+      color: #444;
+      font-size: 0.95rem;
+      margin-top: 12px;
+    }
+    .options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2px;
+      width: 100%;
+      max-width: 1000px;
+    }
+    .option {
+      text-decoration: none;
+      display: block;
+      overflow: hidden;
+      position: relative;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .option:hover { transform: translateY(-6px); z-index: 1; }
+    .preview {
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      letter-spacing: -0.02em;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Option A */
+    .option-a .preview {
+      background: #080808;
+      color: #b4ff00;
+      border: 1px solid #1a1a1a;
+    }
+    .option-a .preview::before {
+      content: 'PENN\ACURTIS';
+      white-space: pre;
+      position: absolute;
+      font-size: clamp(3rem, 8vw, 6rem);
+      color: #111;
+      letter-spacing: -0.04em;
+      line-height: 0.85;
+      pointer-events: none;
+    }
+    .option-a .preview span { position: relative; z-index: 1; }
+    /* Option B */
+    .option-b .preview {
+      background: #04040f;
+      border: 1px solid #0e0e20;
+    }
+    .option-b .preview canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .option-b .preview span {
+      position: relative;
+      z-index: 1;
+      color: #a78bfa;
+    }
+    /* Option C */
+    .option-c .preview {
+      background: #070712;
+      border: 1px solid #12121f;
+      overflow: hidden;
+    }
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(40px);
+      opacity: 0.5;
+      animation: blobFloat 6s ease-in-out infinite;
+    }
+    .blob-1 { width: 120px; height: 120px; background: #6e40c9; top: 10%; left: 20%; animation-delay: 0s; }
+    .blob-2 { width: 100px; height: 100px; background: #e040fb; top: 40%; right: 15%; animation-delay: -2s; }
+    .blob-3 { width: 80px; height: 80px; background: #00b4d8; bottom: 15%; left: 40%; animation-delay: -4s; }
+    @keyframes blobFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(10px, -10px) scale(1.05); }
+      66% { transform: translate(-8px, 8px) scale(0.95); }
+    }
+    .option-c .preview span {
+      position: relative;
+      z-index: 1;
+      color: #e8e8ff;
+    }
+    .info {
+      padding: 28px 32px;
+      background: #0f0f0f;
+      border: 1px solid #1a1a1a;
+      border-top: none;
+    }
+    .option-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      color: #e8e8e8;
+      margin-bottom: 6px;
+    }
+    .option-desc {
+      font-size: 0.83rem;
+      color: #555;
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tag {
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      background: #1a1a1a;
+      color: #555;
+      border-radius: 100px;
+    }
+    .option-a .tag.hi { color: #b4ff00; background: rgba(180,255,0,0.08); }
+    .option-b .tag.hi { color: #a78bfa; background: rgba(167,139,250,0.08); }
+    .option-c .tag.hi { color: #e040fb; background: rgba(224,64,251,0.08); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <p class="eyebrow">penncurtis.com — Redesign</p>
+    <h1>Three Directions</h1>
+    <p class="sub">Click each concept to explore the full experience.</p>
+  </div>
+
+  <div class="options">
+    <a href="option-a.html" class="option option-a">
+      <div class="preview"><span>A — KINETIC</span></div>
+      <div class="info">
+        <div class="option-name">Kinetic Type</div>
+        <div class="option-desc">Aggressive typography, electric lime accents, animated text reveals. Bold and editorial.</div>
+        <div class="tags">
+          <span class="tag hi">Dark</span>
+          <span class="tag">Typographic</span>
+          <span class="tag">High contrast</span>
+          <span class="tag">Scroll reveals</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="option-b.html" class="option option-b">
+      <div class="preview">
+        <canvas id="mini-canvas"></canvas>
+        <span>B — COSMOS</span>
+      </div>
+      <div class="info">
+        <div class="option-name">Particle Cosmos</div>
+        <div class="option-desc">Interactive particle network reacts to your cursor. Immersive, techy, meditative.</div>
+        <div class="tags">
+          <span class="tag hi">Violet</span>
+          <span class="tag">Particle FX</span>
+          <span class="tag">Interactive</span>
+          <span class="tag">Canvas</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="option-c.html" class="option option-c">
+      <div class="preview">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <span>C — AURORA</span>
+      </div>
+      <div class="info">
+        <div class="option-name">Aurora Morph</div>
+        <div class="option-desc">Living gradient blobs, glassmorphism, liquid motion. Premium and otherworldly.</div>
+        <div class="tags">
+          <span class="tag hi">Aurora</span>
+          <span class="tag">Gradient</span>
+          <span class="tag">Glass FX</span>
+          <span class="tag">Ambient</span>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <script>
+    // Mini particle preview for Option B card
+    const canvas = document.getElementById('mini-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+
+    const particles = Array.from({ length: 40 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: Math.random() * 1.5 + 0.5
+    }));
+
+    function drawMini() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = '#a78bfa';
+        ctx.fill();
+      });
+      particles.forEach((a, i) => {
+        particles.slice(i + 1).forEach(b => {
+          const d = Math.hypot(a.x - b.x, a.y - b.y);
+          if (d < 60) {
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = `rgba(110, 84, 255, ${1 - d / 60})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        });
+      });
+      requestAnimationFrame(drawMini);
+    }
+    drawMini();
+  </script>
+</body>
+</html>

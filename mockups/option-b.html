@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>B — Cosmos | penncurtis.com</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Space+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #04040f;
+      --text: #e8e8f4;
+      --dim: #2a2a3f;
+      --dim2: #5a5a80;
+      --accent: #7c5cfc;
+      --accent2: #a78bfa;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.07);
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      cursor: none; overflow-x: hidden;
+    }
+
+    /* ── Canvas ── */
+    #canvas {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── Cursor ── */
+    #cur {
+      width: 8px; height: 8px;
+      background: var(--accent2); border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      mix-blend-mode: screen;
+      transition: width .2s, height .2s;
+    }
+    #cur-ring {
+      width: 34px; height: 34px;
+      border: 1px solid rgba(167,139,250,.35);
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%);
+      transition: width .4s, height .4s, border-color .3s;
+    }
+    body.hov #cur { width: 18px; height: 18px; }
+    body.hov #cur-ring { width: 58px; height: 58px; border-color: rgba(167,139,250,.7); }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      padding: 26px 52px;
+      display: flex; justify-content: space-between; align-items: center;
+      z-index: 100;
+    }
+    .logo {
+      font-family: 'Space Mono', monospace;
+      font-size: .82rem; color: var(--accent2);
+      text-decoration: none; letter-spacing: .04em;
+    }
+    .nav-links { display: flex; gap: 36px; list-style: none; }
+    .nav-links a {
+      color: var(--dim2); text-decoration: none;
+      font-size: .78rem; letter-spacing: .08em;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--accent2); }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative; z-index: 1;
+      min-height: 100vh; padding: 0 52px;
+      display: flex; flex-direction: column;
+      justify-content: flex-end; padding-bottom: 90px;
+    }
+
+    .hero-eyebrow {
+      font-family: 'Space Mono', monospace;
+      font-size: .68rem; letter-spacing: .22em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 28px;
+      opacity: 0;
+    }
+
+    /* Jumbo work title - split chars animated separately */
+    .hero-title {
+      font-weight: 700;
+      font-size: clamp(56px, 10vw, 148px);
+      line-height: .9; letter-spacing: -.04em;
+      overflow: hidden;
+    }
+    .hero-title .char {
+      display: inline-block;
+      will-change: transform, opacity;
+    }
+    .hero-title .space { display: inline-block; width: .25em; }
+
+    .hero-title .grad {
+      background: linear-gradient(135deg, #fff 0%, var(--accent2) 55%, var(--accent) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-row {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      margin-top: 40px;
+      opacity: 0;
+    }
+    .hero-desc {
+      max-width: 400px; font-size: .92rem;
+      color: var(--dim2); line-height: 1.8; font-weight: 300;
+    }
+    .hero-btns { display: flex; gap: 12px; }
+    .btn-p {
+      padding: 13px 28px; background: var(--accent); color: #fff;
+      text-decoration: none; font-size: .8rem; font-weight: 500;
+      letter-spacing: .06em; border-radius: 100px;
+      transition: background .3s, transform .3s;
+      will-change: transform;
+    }
+    .btn-p:hover { background: var(--accent2); transform: translateY(-3px); }
+    .btn-g {
+      padding: 13px 28px; border: 1px solid var(--dim);
+      color: var(--dim2); text-decoration: none;
+      font-size: .8rem; letter-spacing: .06em; border-radius: 100px;
+      transition: border-color .3s, color .3s;
+    }
+    .btn-g:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    /* ── Work ── */
+    .work {
+      position: relative; z-index: 1;
+      padding: 130px 52px;
+    }
+
+    .work-header {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 60px;
+    }
+    .work-title {
+      font-weight: 700; font-size: clamp(1.8rem, 3.5vw, 3rem);
+      letter-spacing: -.03em; color: var(--text);
+    }
+    .work-count {
+      font-family: 'Space Mono', monospace;
+      font-size: .68rem; color: var(--accent); letter-spacing: .14em;
+    }
+
+    /* Numbered list - each row flies in from random direction */
+    .work-list { display: flex; flex-direction: column; gap: 1px; }
+    .wi {
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 32px 44px;
+      display: flex; justify-content: space-between; align-items: center;
+      text-decoration: none;
+      position: relative; overflow: hidden;
+      transition: border-color .4s, background .4s;
+      will-change: transform;
+    }
+    /* violet sweep from left */
+    .wi::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(124,92,252,.12), transparent);
+      transform: scaleX(0); transform-origin: left;
+      transition: transform .45s cubic-bezier(.16,1,.3,1);
+    }
+    .wi:hover::before { transform: scaleX(1); }
+    .wi:hover { border-color: rgba(167,139,250,.4); }
+
+    .wi-left { display: flex; gap: 32px; align-items: baseline; z-index: 1; }
+    .wi-num {
+      font-family: 'Space Mono', monospace; font-size: .68rem;
+      color: var(--accent); min-width: 26px;
+    }
+    .wi-info { display: flex; flex-direction: column; gap: 4px; }
+    .wi-name {
+      font-size: clamp(1.1rem, 2vw, 1.6rem);
+      font-weight: 500; color: var(--text); letter-spacing: -.015em;
+      transition: color .3s;
+    }
+    .wi-cat {
+      font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--dim2);
+    }
+    .wi-arrow {
+      color: var(--dim2); font-size: 1.1rem; z-index: 1;
+      transition: color .3s, transform .3s;
+    }
+    .wi:hover .wi-name { color: var(--accent2); }
+    .wi:hover .wi-arrow { color: var(--accent2); transform: translate(5px,-5px); }
+
+    /* ── Glitch divider ── */
+    .glitch-line {
+      position: relative; z-index: 1;
+      height: 1px; margin: 0 52px;
+      background: var(--border);
+      overflow: visible;
+    }
+    .glitch-line::before, .glitch-line::after {
+      content: ''; position: absolute;
+      top: 0; height: 1px;
+      background: var(--accent2);
+    }
+    .glitch-line::before { width: 0; animation: glitchLine1 4s ease-in-out infinite 1s; }
+    .glitch-line::after  { width: 0; animation: glitchLine2 4s ease-in-out infinite 2.5s; }
+    @keyframes glitchLine1 {
+      0%,100%{left:0;width:0;opacity:0}
+      20%{opacity:1;width:30%}
+      50%{left:40%;width:20%}
+      80%{left:80%;width:0;opacity:0}
+    }
+    @keyframes glitchLine2 {
+      0%,100%{right:0;width:0;opacity:0}
+      20%{opacity:1;width:25%}
+      50%{right:35%;width:15%}
+      80%{right:70%;width:0;opacity:0}
+    }
+
+    /* ── About ── */
+    .about {
+      position: relative; z-index: 1;
+      padding: 100px 52px 120px;
+    }
+    .about-inner {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start;
+    }
+    .about-heading {
+      font-weight: 700;
+      font-size: clamp(2rem, 4vw, 4rem);
+      letter-spacing: -.03em; line-height: 1;
+      color: var(--text); margin-bottom: 8px;
+    }
+    .about-heading span { color: var(--accent2); }
+    .about-sub {
+      font-size: .8rem; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--dim2); margin-top: 16px;
+      font-family: 'Space Mono', monospace;
+    }
+    .about-p {
+      font-size: .93rem; color: var(--dim2); line-height: 1.85; font-weight: 300;
+      margin-bottom: 16px; will-change: transform;
+    }
+    .about-p strong { color: var(--text); font-weight: 500; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+    .chip {
+      padding: 7px 16px; border: 1px solid var(--dim);
+      border-radius: 100px; font-size: .72rem; color: var(--dim2);
+      transition: border-color .2s, color .2s, transform .2s;
+      will-change: transform;
+    }
+    .chip:hover { border-color: var(--accent); color: var(--accent2); transform: translateY(-3px) scale(1.05); }
+
+    /* ── Footer ── */
+    footer {
+      position: relative; z-index: 1;
+      padding: 44px 52px; border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .socials a {
+      font-family: 'Space Mono', monospace; font-size: .68rem;
+      letter-spacing: .08em; color: var(--dim2);
+      text-decoration: none; transition: color .2s; margin-left: 24px;
+    }
+    .socials a:hover { color: var(--accent2); }
+
+    /* ── Back ── */
+    .back {
+      position: fixed; bottom: 28px; right: 28px;
+      background: var(--surface); backdrop-filter: blur(16px);
+      color: var(--dim2); text-decoration: none;
+      font-family: 'Space Mono', monospace;
+      font-size: .68rem; letter-spacing: .08em;
+      padding: 10px 18px; border-radius: 100px; z-index: 200;
+      border: 1px solid var(--dim); transition: color .2s, border-color .2s;
+    }
+    .back:hover { color: var(--accent2); border-color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <canvas id="canvas"></canvas>
+  <div id="cur"></div>
+  <div id="cur-ring"></div>
+
+  <nav>
+    <a href="#" class="logo">pc/</a>
+    <ul class="nav-links">
+      <li><a href="#work">Work</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <p class="hero-eyebrow" id="eyebrow">// Selected Works</p>
+    <h1 class="hero-title" id="hero-title">
+      <!-- chars injected by JS -->
+    </h1>
+    <div class="hero-row" id="hero-row">
+      <p class="hero-desc">Product design and development. Apps that think. Interfaces that feel. Code that ships.</p>
+      <div class="hero-btns">
+        <a href="#work" class="btn-p">View work</a>
+        <a href="#about" class="btn-g">About</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Work -->
+  <section class="work" id="work">
+    <div class="work-header">
+      <h2 class="work-title" id="work-title">Projects</h2>
+      <span class="work-count">08 TOTAL</span>
+    </div>
+    <div class="work-list">
+      <a href="#" class="wi"><div class="wi-left"><span class="wi-num">01</span><div class="wi-info"><div class="wi-name">Resume Builder</div><div class="wi-cat">AI App · Web</div></div></div><span class="wi-arrow">↗</span></a>
+      <a href="#" class="wi"><div class="wi-left"><span class="wi-num">02</span><div class="wi-info"><div class="wi-name">Minute of Math</div><div class="wi-cat">iOS · Swift</div></div></div><span class="wi-arrow">↗</span></a>
+      <a href="#" class="wi"><div class="wi-left"><span class="wi-num">03</span><div class="wi-info"><div class="wi-name">News Aggregator</div><div class="wi-cat">Web App · Python</div></div></div><span class="wi-arrow">↗</span></a>
+      <a href="#" class="wi"><div class="wi-left"><span class="wi-num">04</span><div class="wi-info"><div class="wi-name">Athena</div><div class="wi-cat">Python · CLI</div></div></div><span class="wi-arrow">↗</span></a>
+      <a href="#" class="wi"><div class="wi-left"><span class="wi-num">05</span><div class="wi-info"><div class="wi-name">SkyHighStack</div><div class="wi-cat">iOS · Swift</div></div></div><span class="wi-arrow">↗</span></a>
+      <a href="#" class="wi"><div class="wi-left"><span class="wi-num">06</span><div class="wi-info"><div class="wi-name">Space Invaders</div><div class="wi-cat">Game · JS</div></div></div><span class="wi-arrow">↗</span></a>
+      <a href="#" class="wi"><div class="wi-left"><span class="wi-num">07</span><div class="wi-info"><div class="wi-name">URL Shortener</div><div class="wi-cat">Python · Flask</div></div></div><span class="wi-arrow">↗</span></a>
+      <a href="#" class="wi"><div class="wi-left"><span class="wi-num">08</span><div class="wi-info"><div class="wi-name">Worldwide Timekeeper</div><div class="wi-cat">Web App · JS</div></div></div><span class="wi-arrow">↗</span></a>
+    </div>
+  </section>
+
+  <div class="glitch-line"></div>
+
+  <!-- About -->
+  <section class="about" id="about">
+    <div class="about-inner">
+      <div>
+        <h2 class="about-heading">Penn<br><span>Curtis.</span></h2>
+        <p class="about-sub">// Product Designer & Developer</p>
+      </div>
+      <div>
+        <p class="about-p">Based in <strong>New York City</strong>. I build products that bridge the gap between design intuition and engineering precision.</p>
+        <p class="about-p">From <strong>Figma</strong> to shipped code — iOS apps, AI tools, web applications. I care about how things <em>feel</em>.</p>
+        <div class="chips">
+          <span class="chip">Product Design</span>
+          <span class="chip">Figma</span>
+          <span class="chip">React</span>
+          <span class="chip">Python</span>
+          <span class="chip">iOS / Swift</span>
+          <span class="chip">SEO</span>
+          <span class="chip">HTML / CSS</span>
+          <span class="chip">Motion</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <a href="#" class="logo">pc/</a>
+    <div class="socials">
+      <a href="#">Instagram</a>
+      <a href="#">LinkedIn</a>
+      <a href="#">GitHub</a>
+      <a href="#">Dev.to</a>
+    </div>
+  </footer>
+
+  <a href="index.html" class="back">← Concepts</a>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    /* ─────────────────────────────────────────
+       PARTICLE CANVAS
+    ───────────────────────────────────────── */
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let W, H;
+    const mouse = { x: -9999, y: -9999, vx: 0, vy: 0, px: 0, py: 0 };
+
+    function resize() {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    window.addEventListener('mousemove', e => {
+      mouse.vx = e.clientX - mouse.px;
+      mouse.vy = e.clientY - mouse.py;
+      mouse.px = mouse.x; mouse.py = mouse.y;
+      mouse.x = e.clientX; mouse.y = e.clientY;
+    });
+
+    // Ripple on click
+    const ripples = [];
+    window.addEventListener('click', e => {
+      ripples.push({ x: e.clientX, y: e.clientY, r: 0, alpha: 1 });
+    });
+
+    class Particle {
+      constructor() { this.reset(true); }
+      reset(init) {
+        this.x = init ? Math.random() * W : Math.random() * W;
+        this.y = init ? Math.random() * H : Math.random() * H;
+        this.ox = this.x; this.oy = this.y; // original pos
+        this.vx = (Math.random() - .5) * .5;
+        this.vy = (Math.random() - .5) * .5;
+        this.r = Math.random() * 1.6 + .4;
+        this.alpha = Math.random() * .55 + .25;
+        this.hue = 260 + Math.random() * 40; // violet range
+      }
+      update() {
+        // Mouse repulsion / attraction
+        const dx = this.x - mouse.x, dy = this.y - mouse.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const strength = 140;
+        if (dist < strength) {
+          const force = (strength - dist) / strength;
+          // repel when fast mouse, attract when slow
+          const speed = Math.sqrt(mouse.vx**2 + mouse.vy**2);
+          const dir = speed > 5 ? 1 : -.3;
+          this.vx += (dx / dist) * force * dir * .6;
+          this.vy += (dy / dist) * force * dir * .6;
+        }
+
+        // Ripple push
+        ripples.forEach(rip => {
+          const rdx = this.x - rip.x, rdy = this.y - rip.y;
+          const rd = Math.sqrt(rdx*rdx + rdy*rdy);
+          if (Math.abs(rd - rip.r) < 30) {
+            const push = (30 - Math.abs(rd - rip.r)) / 30 * 3;
+            this.vx += (rdx / rd || 0) * push;
+            this.vy += (rdy / rd || 0) * push;
+          }
+        });
+
+        // Damping
+        this.vx *= .94; this.vy *= .94;
+        // Speed cap
+        const spd = Math.sqrt(this.vx**2 + this.vy**2);
+        if (spd > 3) { this.vx *= 3/spd; this.vy *= 3/spd; }
+
+        this.x += this.vx + Math.sin(Date.now()*.0005 + this.ox) * .15;
+        this.y += this.vy + Math.cos(Date.now()*.0004 + this.oy) * .15;
+
+        if (this.x < 0) this.x = W;
+        if (this.x > W) this.x = 0;
+        if (this.y < 0) this.y = H;
+        if (this.y > H) this.y = 0;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+        ctx.fillStyle = `hsla(${this.hue}, 80%, 75%, ${this.alpha})`;
+        ctx.fill();
+      }
+    }
+
+    const COUNT = Math.min(160, Math.floor(W * H / 7500));
+    const particles = Array.from({ length: COUNT }, () => new Particle());
+
+    const MAX_DIST = 110;
+
+    function drawFrame() {
+      ctx.clearRect(0, 0, W, H);
+
+      // Update ripples
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        ripples[i].r += 5;
+        ripples[i].alpha -= .015;
+        if (ripples[i].alpha <= 0) { ripples.splice(i, 1); continue; }
+        ctx.beginPath();
+        ctx.arc(ripples[i].x, ripples[i].y, ripples[i].r, 0, Math.PI*2);
+        ctx.strokeStyle = `rgba(167, 139, 250, ${ripples[i].alpha * .4})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Connections
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const d = Math.sqrt(dx*dx + dy*dy);
+          if (d < MAX_DIST) {
+            const a = (1 - d / MAX_DIST) * .5;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(124, 92, 252, ${a})`;
+            ctx.lineWidth = .7;
+            ctx.stroke();
+          }
+        }
+      }
+
+      particles.forEach(p => { p.update(); p.draw(); });
+      requestAnimationFrame(drawFrame);
+    }
+    drawFrame();
+
+    /* ─────────────────────────────────────────
+       DUAL CURSOR
+    ───────────────────────────────────────── */
+    const cur = document.getElementById('cur');
+    const ring = document.getElementById('cur-ring');
+    let rx = 0, ry = 0;
+
+    document.addEventListener('mousemove', e => {
+      gsap.to(cur, { left: e.clientX, top: e.clientY, duration: .05, ease: 'none' });
+    });
+    (function ringLoop() {
+      rx += (mouse.x - rx) * .1; ry += (mouse.y - ry) * .1;
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(ringLoop);
+    })();
+
+    document.querySelectorAll('a, .chip').forEach(el => {
+      el.addEventListener('mouseenter', () => document.body.classList.add('hov'));
+      el.addEventListener('mouseleave', () => document.body.classList.remove('hov'));
+    });
+
+    /* ─────────────────────────────────────────
+       HERO TITLE — split chars, cascade in
+    ───────────────────────────────────────── */
+    const titleText = 'Selected Works.';
+    const titleEl = document.getElementById('hero-title');
+    titleEl.innerHTML = titleText.split('').map(c =>
+      c === ' '
+        ? '<span class="space"></span>'
+        : `<span class="char" style="display:inline-block;will-change:transform,opacity">${c}</span>`
+    ).join('');
+
+    // Add grad class to last word
+    const chars = titleEl.querySelectorAll('.char');
+    // Mark "Works." chars (last 6)
+    [...chars].slice(-6).forEach(c => c.classList.add('grad'));
+
+    // Each char enters from a random angle + position
+    gsap.from(chars, {
+      y: (i) => (Math.sin(i * 1.7) > 0 ? -1 : 1) * (120 + Math.abs(Math.sin(i)) * 200),
+      x: (i) => (Math.cos(i * 2.1) > 0 ? 1 : -1) * (50 + Math.abs(Math.cos(i)) * 120),
+      rotation: (i) => (Math.sin(i) * 30),
+      opacity: 0, scale: .3,
+      stagger: .035,
+      delay: .5,
+      duration: 1.1,
+      ease: 'back.out(2.2)',
+    });
+
+    gsap.to('#eyebrow', { opacity: 1, duration: .6, delay: .3 });
+    gsap.to('#hero-row', { opacity: 1, y: 0, duration: .9, delay: 1.8, ease: 'power3.out',
+      from: { y: 30 }
+    });
+    gsap.from('#hero-row', { y: 30, duration: .9, delay: 1.8, ease: 'power3.out' });
+
+    /* ─────────────────────────────────────────
+       WORK TITLE — chars fly in from different sides
+    ───────────────────────────────────────── */
+    const wtEl = document.getElementById('work-title');
+    wtEl.innerHTML = 'Projects'.split('').map(c =>
+      `<span style="display:inline-block;will-change:transform">${c}</span>`
+    ).join('');
+
+    gsap.from(wtEl.querySelectorAll('span'), {
+      scrollTrigger: { trigger: wtEl, start: 'top 75%' },
+      y: (i) => i % 2 === 0 ? -100 : 100,
+      x: (i) => (i % 3 - 1) * 60,
+      rotation: (i) => (i % 2 === 0 ? 1 : -1) * (10 + i * 3),
+      opacity: 0, scale: .5,
+      stagger: .07,
+      duration: 1,
+      ease: 'back.out(2)',
+    });
+
+    /* ─────────────────────────────────────────
+       WORK ITEMS — each row from random direction
+    ───────────────────────────────────────── */
+    const items = gsap.utils.toArray('.wi');
+    const VW = window.innerWidth, VH2 = window.innerHeight;
+
+    const entrances = [
+      { x: -VW,    y: 0,     rotation: -15 },
+      { x:  VW,    y: -VH2*.4, rotation: 12 },
+      { x:  0,     y:  VH2,  rotation: -10 },
+      { x: -VW*.8, y:  VH2*.5, rotation: 18 },
+      { x:  VW,    y:  0,    rotation: -14 },
+      { x:  0,     y: -VH2*.8, rotation: 8  },
+      { x: -VW*.6, y: -VH2*.4, rotation: -20 },
+      { x:  VW*.8, y:  VH2*.3, rotation: 16  },
+    ];
+
+    items.forEach((item, i) => {
+      const e = entrances[i % entrances.length];
+      gsap.from(item, {
+        scrollTrigger: { trigger: '.work-list', start: 'top 60%' },
+        x: e.x, y: e.y, rotation: e.rotation,
+        opacity: 0, scale: .6,
+        duration: 1.3,
+        delay: i * .09,
+        ease: 'back.out(1.5)',
+      });
+    });
+
+    /* ─────────────────────────────────────────
+       ABOUT — staggered alternating slide
+    ───────────────────────────────────────── */
+    gsap.from('.about-heading', {
+      scrollTrigger: { trigger: '.about', start: 'top 70%' },
+      x: -120, rotation: -12, opacity: 0, scale: .8,
+      duration: 1.1, ease: 'back.out(1.8)',
+    });
+    gsap.from('.about-sub', {
+      scrollTrigger: { trigger: '.about', start: 'top 70%' },
+      x: -80, opacity: 0, duration: .8, delay: .2, ease: 'power3.out',
+    });
+
+    document.querySelectorAll('.about-p').forEach((p, i) => {
+      gsap.from(p, {
+        scrollTrigger: { trigger: p, start: 'top 85%' },
+        x: i % 2 === 0 ? 100 : -100,
+        rotation: i % 2 === 0 ? 5 : -5,
+        opacity: 0, scale: .9,
+        duration: .9, ease: 'back.out(1.4)',
+      });
+    });
+
+    // Chips cascade
+    gsap.from('.chip', {
+      scrollTrigger: { trigger: '.chips', start: 'top 85%' },
+      y: (i) => (i % 2 === 0 ? 60 : -60),
+      x: (i) => (i % 3 - 1) * 40,
+      rotation: (i) => (Math.sin(i) * 20),
+      opacity: 0, scale: .5,
+      stagger: .06, duration: .8, ease: 'back.out(2)',
+    });
+  </script>
+</body>
+</html>

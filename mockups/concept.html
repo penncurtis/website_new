@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Penn Curtis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #080808;
+      color: #f5f5f7;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Background text ── */
+    .bg-text {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: clamp(52px, 9vw, 130px);
+      font-weight: 700; letter-spacing: -.04em;
+      color: rgba(255,252,245,0.10);
+      white-space: nowrap; pointer-events: none;
+      z-index: 0; user-select: none;
+      text-shadow: 0 0 80px rgba(255,252,245,0.18), 0 0 220px rgba(255,252,245,0.07);
+    }
+
+    /* ── Game subtitle (shown during play) ── */
+    #bg-subtitle {
+      position: fixed; top: 57%; left: 50%;
+      transform: translateX(-50%);
+      font-size: clamp(0.6rem, 0.85vw, 0.82rem);
+      font-family: 'Inter', sans-serif;
+      color: rgba(255,252,245,0.20);
+      letter-spacing: .16em;
+      pointer-events: none; z-index: 0; user-select: none;
+      opacity: 0; transition: opacity 0.9s ease;
+      white-space: nowrap;
+    }
+    #bg-subtitle.show { opacity: 1; }
+
+    /* ── Stadium lights ── */
+    #stadium-lights {
+      position: fixed; inset: 0; z-index: 3; pointer-events: none;
+      background:
+        radial-gradient(ellipse 44% 54% at 7% -4%,  rgba(255,225,140,0.09) 0%, transparent 64%),
+        radial-gradient(ellipse 44% 54% at 93% -4%, rgba(255,225,140,0.09) 0%, transparent 64%);
+    }
+
+    /* ── Strobe overlay (epilepsy-safe: ~1.4 Hz, max opacity 0.08) ── */
+    #strobe-overlay {
+      position: fixed; inset: 0; z-index: 4; pointer-events: none; opacity: 0;
+    }
+    .strobe-countdown { animation: strobeCD 0.72s linear infinite; }
+    .strobe-gameover  { animation: strobeOV 0.72s linear infinite; }
+    @keyframes strobeCD {
+      0%   { opacity: 0; }
+      28%  { opacity: 0.065; background: rgba(255,225,145,1); }
+      58%  { opacity: 0.065; }
+      100% { opacity: 0; }
+    }
+    @keyframes strobeOV {
+      0%   { opacity: 0; }
+      28%  { opacity: 0.075; background: rgba(255,38,22,1); }
+      58%  { opacity: 0.075; }
+      100% { opacity: 0; }
+    }
+
+    /* ── Vignette ── */
+    .vignette {
+      position: fixed; inset: 0; z-index: 2; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 110%, rgba(100,60,255,.07) 0%, transparent 70%),
+        radial-gradient(ellipse 100% 40% at 50% 100%, rgba(0,0,0,.55) 0%, transparent 60%),
+        radial-gradient(ellipse 100% 18% at 50% 0%,   rgba(8,8,8,.95)  0%, transparent 100%);
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      padding: 22px 44px;
+      display: flex; justify-content: space-between; align-items: center;
+      z-index: 200;
+    }
+    .nav-name { font-size: .82rem; font-weight: 500; color: rgba(255,255,255,.45); letter-spacing: -.01em; }
+    .nav-links { display: flex; gap: 28px; list-style: none; }
+    .nav-links a { color: rgba(255,255,255,.35); text-decoration: none; font-size: .78rem; transition: color .2s; }
+    .nav-links a:hover { color: rgba(255,255,255,.9); }
+
+    /* ── Stage ── */
+    #stage { position: fixed; inset: 0; z-index: 1; overflow: hidden; }
+
+    /* ── Balls ── */
+    .ball {
+      position: absolute; top: 0; left: 0;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: grab; will-change: transform; user-select: none;
+      transition: background .5s ease, filter .22s ease;
+    }
+    .ball:active { cursor: grabbing; }
+
+    /* hover glow (point 7) */
+    .ball:hover {
+      filter: brightness(1.24) saturate(1.2) drop-shadow(0 0 16px rgba(255,255,255,0.22));
+    }
+
+    .ball-inner {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; width: 100%; height: 100%; padding: 8px;
+      pointer-events: none; transition: opacity .35s ease;
+    }
+    .ball-cat  { font-size: .56rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.55); margin-bottom: 4px; }
+    .ball-name { font-size: .80rem; font-weight: 600; color: #fff; text-align: center; line-height: 1.2; }
+    .ball-shine { position: absolute; top: 13%; left: 19%; width: 37%; height: 27%; background: radial-gradient(ellipse, rgba(255,255,255,.38) 0%, transparent 70%); border-radius: 50%; pointer-events: none; }
+    .ball-shade { position: absolute; bottom: 7%; left: 14%; width: 72%; height: 28%; background: radial-gradient(ellipse, rgba(0,0,0,.35) 0%, transparent 70%); border-radius: 50%; pointer-events: none; }
+
+    /* basketball seam overlay (hidden by default) */
+    .bball-seams {
+      position: absolute; inset: 0; pointer-events: none;
+      display: none; border-radius: 50%; overflow: hidden;
+    }
+
+    /* ── Hoop ── */
+    #net-svg {
+      position: fixed; z-index: 46;
+      transform-origin: top center;
+      pointer-events: none; overflow: visible;
+    }
+    #backboard {
+      position: fixed; z-index: 49; border-radius: 3px;
+      background: rgba(255,255,255,.13);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+    #bracket { position: fixed; z-index: 49; border-radius: 2px; background: rgba(255,255,255,.18); }
+    #rim-bar {
+      position: fixed; z-index: 52; border-radius: 8px;
+      background: linear-gradient(to bottom, #e8621a, #b84010);
+      box-shadow: 0 3px 10px rgba(0,0,0,.5);
+    }
+    .rim-post {
+      position: fixed; border-radius: 50%; z-index: 53;
+      background: radial-gradient(circle at 35% 30%, #e8621a, #a83e0a);
+      box-shadow: 0 2px 8px rgba(0,0,0,.5);
+    }
+    #hoop-glow {
+      position: fixed; z-index: 48; pointer-events: none; border-radius: 50%;
+      background: radial-gradient(circle, rgba(232,98,26,0.16) 0%, transparent 68%);
+    }
+
+    /* ── Net animation ── */
+    .net-swoosh { animation: netSwoosh .75s cubic-bezier(.25,.46,.45,.94) forwards; }
+    @keyframes netSwoosh {
+      0%  { transform: scaleX(1)    scaleY(1)    translateY(0); }
+      18% { transform: scaleX(.72)  scaleY(1.38) translateY(9px); }
+      38% { transform: scaleX(1.14) scaleY(.86)  translateY(-3px); }
+      58% { transform: scaleX(.93)  scaleY(1.08) translateY(2px); }
+      78% { transform: scaleX(1.04) scaleY(.97); }
+      100%{ transform: scaleX(1)    scaleY(1)    translateY(0); }
+    }
+
+    /* ── Hoop hint scribble (point 3) ── */
+    #hoop-hint {
+      position: fixed; z-index: 55; pointer-events: none;
+      text-align: right; width: 145px;
+      transition: opacity .7s ease;
+    }
+    .scribble-text {
+      font-family: 'Caveat', cursive;
+      font-size: 1.18rem; font-weight: 500;
+      color: rgba(255,255,255,.48);
+      display: block; transform: rotate(-6deg);
+      line-height: 1.3; white-space: nowrap;
+    }
+    .scribble-arrow { display: block; margin-left: auto; margin-top: 3px; }
+
+    /* ── Score pop "+1" ── */
+    .score-pop {
+      position: fixed; z-index: 160; pointer-events: none;
+      font-size: 1.4rem; font-weight: 700; color: #fff;
+      font-family: 'Roboto Mono', monospace;
+      animation: scorePop .9s cubic-bezier(.16,1,.3,1) forwards;
+    }
+    @keyframes scorePop {
+      0%  { opacity: 1; transform: translateY(0)    scale(1); }
+      100%{ opacity: 0; transform: translateY(-80px) scale(1.4); }
+    }
+
+    /* ── Game UI (point 2: Roboto Mono) ── */
+    #game-ui {
+      position: fixed; top: 26%; left: 50%; transform: translateX(-50%);
+      text-align: center; z-index: 150; pointer-events: none;
+      font-family: 'Roboto Mono', monospace;
+    }
+    #phase-countdown, #phase-playing, #phase-over { display: none; }
+    #phase-countdown.active, #phase-playing.active, #phase-over.active { display: block; }
+
+    #phase-countdown {
+      font-size: .9rem; font-weight: 400; color: rgba(255,255,255,.55);
+      letter-spacing: .04em;
+    }
+    #cd-num {
+      display: block; font-size: 3.5rem; font-weight: 700;
+      color: #fff; letter-spacing: -.03em; line-height: 1;
+      margin-top: 6px;
+      animation: cdPulse 1s ease infinite;
+    }
+    @keyframes cdPulse {
+      0%,100% { transform: scale(1);    opacity: 1; }
+      50%      { transform: scale(1.18); opacity: .8; }
+    }
+
+    /* ── End game button (point 5) ── */
+    #btn-end-game {
+      display: block; margin: 0 auto 12px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 20px; padding: 4px 16px;
+      color: rgba(255,255,255,0.36);
+      font-family: 'Roboto Mono', monospace;
+      font-size: .6rem; letter-spacing: .1em; text-transform: uppercase;
+      cursor: pointer; pointer-events: auto;
+      transition: border-color .2s, color .2s, background .2s;
+    }
+    #btn-end-game:hover {
+      border-color: rgba(255,255,255,0.42);
+      color: rgba(255,255,255,0.72);
+      background: rgba(255,255,255,0.06);
+    }
+
+    #phase-playing { white-space: nowrap; }
+    #ui-timer, #ui-score {
+      display: inline-block;
+      font-size: 3rem; font-weight: 700; letter-spacing: -.02em;
+      color: #fff; transition: color .3s;
+    }
+    #ui-sep { display: inline-block; font-size: 1.5rem; margin: 0 14px; color: rgba(255,255,255,.22); font-weight: 400; }
+
+    .flash-red { animation: flashRed .55s ease infinite; color: #ff453a !important; }
+    @keyframes flashRed { 0%,100%{opacity:1} 50%{opacity:.45} }
+
+    #phase-over { padding-top: 4px; }
+    #over-stats { white-space: nowrap; }
+    #over-timer, #over-score {
+      display: inline-block;
+      font-size: 3rem; font-weight: 700; letter-spacing: -.02em;
+      color: #ff453a; animation: flashRed .55s ease infinite;
+    }
+    #over-sep { display: inline-block; font-size: 1.5rem; margin: 0 14px; color: rgba(255,60,60,.3); font-weight: 400; }
+    #over-msg {
+      display: block; margin-top: 10px;
+      font-size: .62rem; font-weight: 400; letter-spacing: .07em;
+      color: rgba(255,80,80,.7); text-transform: lowercase;
+    }
+
+    /* ── Tooltip ── */
+    .tip {
+      position: fixed; z-index: 300;
+      background: rgba(28,28,30,.93);
+      backdrop-filter: blur(24px) saturate(1.8);
+      border: 1px solid rgba(255,255,255,.1); border-radius: 14px;
+      padding: 13px 16px; pointer-events: none;
+      opacity: 0; transform: translateY(6px) scale(.97);
+      transition: opacity .18s, transform .18s;
+      max-width: 210px;
+    }
+    .tip.show { opacity: 1; transform: translateY(0) scale(1); }
+    .tip-name { font-size: .8rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
+    .tip-desc { font-size: .72rem; color: rgba(255,255,255,.45); line-height: 1.55; }
+
+    /* ── Hint ── */
+    .hint {
+      position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%);
+      font-size: .68rem; letter-spacing: .06em; color: rgba(255,255,255,.2);
+      z-index: 100; pointer-events: none; transition: opacity 1.2s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-text">things i've built</div>
+  <div id="bg-subtitle">( like this game )</div>
+  <div id="stadium-lights"></div>
+  <div id="strobe-overlay"></div>
+  <div class="vignette"></div>
+
+  <nav>
+    <span class="nav-name">Penn Curtis</span>
+    <ul class="nav-links">
+      <li><a href="#">About</a></li>
+      <li><a href="#">Blog</a></li>
+      <li><a href="#">Contact</a></li>
+    </ul>
+  </nav>
+
+  <div id="stage"></div>
+
+  <!-- Hoop elements -->
+  <div id="hoop-glow"></div>
+  <div id="backboard"></div>
+  <div id="bracket"></div>
+
+  <!-- Scribble hint (point 3) -->
+  <div id="hoop-hint">
+    <span class="scribble-text">put one in</span>
+    <svg class="scribble-arrow" width="64" height="40" viewBox="0 0 64 40" fill="none">
+      <path d="M6,34 Q20,6 57,20" stroke="rgba(255,255,255,0.40)" stroke-width="1.9" stroke-linecap="round"/>
+      <path d="M51,13 L58,21 L49,24" stroke="rgba(255,255,255,0.40)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <svg id="net-svg"></svg>
+  <div id="rim-bar"></div>
+  <div class="rim-post" id="rim-post-l"></div>
+  <div class="rim-post" id="rim-post-r"></div>
+
+  <!-- Game UI -->
+  <div id="game-ui">
+    <div id="phase-countdown">
+      game starting in
+      <span id="cd-num">3</span>
+    </div>
+    <div id="phase-playing">
+      <button id="btn-end-game">end game</button>
+      <span id="ui-timer">0:30</span>
+      <span id="ui-sep">·</span>
+      <span id="ui-score">0</span>
+    </div>
+    <div id="phase-over">
+      <div id="over-stats">
+        <span id="over-timer">0:00</span>
+        <span id="over-sep">·</span>
+        <span id="over-score">0</span>
+      </div>
+      <span id="over-msg">shoot to start a new game</span>
+    </div>
+  </div>
+
+  <div class="tip" id="tip"><div class="tip-name"></div><div class="tip-desc"></div></div>
+  <p class="hint" id="hint">drag to throw &nbsp;·&nbsp; aim for the hoop</p>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <script>
+    const { Engine, Runner, Bodies, Body, World, Mouse, MouseConstraint, Events } = Matter;
+
+    /* ─────────────────────────────────────────
+       CONSTANTS
+    ───────────────────────────────────────── */
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const BALL_R      = 52;
+    const RIM_R       = 11;
+    const OPENING     = 155;
+    const HOOP_Y      = Math.round(H * 0.27);
+    const RIM_R_X     = W - 30;
+    const RIM_L_X     = RIM_R_X - OPENING;
+    const HOOP_CX     = (RIM_L_X + RIM_R_X) / 2;
+    const NET_W       = OPENING - 4;
+    const NET_H       = 84;
+    const NET_STRINGS = 9;
+
+    // Pre-build basketball seam SVG (point 4)
+    const R = BALL_R, D = BALL_R * 2;
+    const SEAMS_SVG = `<svg width="${D}" height="${D}" viewBox="0 0 ${D} ${D}" style="position:absolute;top:0;left:0;pointer-events:none;">
+      <line x1="${(R*0.12).toFixed(1)}" y1="${R}" x2="${(R*1.88).toFixed(1)}" y2="${R}" stroke="rgba(0,0,0,0.36)" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M${R},${(R*0.13).toFixed(1)} C${(R*0.54).toFixed(1)},${(R*0.45).toFixed(1)} ${(R*0.54).toFixed(1)},${(R*1.55).toFixed(1)} ${R},${(R*1.87).toFixed(1)}" fill="none" stroke="rgba(0,0,0,0.36)" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M${R},${(R*0.13).toFixed(1)} C${(R*1.46).toFixed(1)},${(R*0.45).toFixed(1)} ${(R*1.46).toFixed(1)},${(R*1.55).toFixed(1)} ${R},${(R*1.87).toFixed(1)}" fill="none" stroke="rgba(0,0,0,0.36)" stroke-width="2.6" stroke-linecap="round"/>
+    </svg>`;
+
+    /* ─────────────────────────────────────────
+       HOOP VISUALS
+    ───────────────────────────────────────── */
+    document.getElementById('hoop-glow').style.cssText =
+      `left:${HOOP_CX - 130}px; top:${HOOP_Y - 130}px; width:260px; height:260px;`;
+
+    // Backboard — hoop sits ~76% down from top (point 8: real hoop position)
+    document.getElementById('backboard').style.cssText =
+      `right:0; top:${HOOP_Y - 128}px; width:16px; height:168px;`;
+
+    document.getElementById('bracket').style.cssText =
+      `left:${RIM_R_X - 2}px; top:${HOOP_Y - 4}px; width:${W - RIM_R_X + 2}px; height:8px;`;
+
+    const rimBarLeft = RIM_L_X - RIM_R;
+    document.getElementById('rim-bar').style.cssText =
+      `left:${rimBarLeft}px; top:${HOOP_Y - RIM_R}px; width:${OPENING + RIM_R * 2}px; height:${RIM_R * 2}px;`;
+
+    const RPC = RIM_R * 2;
+    document.getElementById('rim-post-l').style.cssText =
+      `left:${RIM_L_X - RIM_R}px; top:${HOOP_Y - RIM_R}px; width:${RPC}px; height:${RPC}px;`;
+    document.getElementById('rim-post-r').style.cssText =
+      `left:${RIM_R_X - RIM_R}px; top:${HOOP_Y - RIM_R}px; width:${RPC}px; height:${RPC}px;`;
+
+    // Net SVG — shift left by 6px (point 10)
+    const netSvg = document.getElementById('net-svg');
+    netSvg.style.left = (RIM_L_X + RIM_R - 4) + 'px';
+    netSvg.style.top  = HOOP_Y + 'px';
+    netSvg.setAttribute('width',  NET_W);
+    netSvg.setAttribute('height', NET_H + 10);
+    netSvg.setAttribute('viewBox', `0 0 ${NET_W} ${NET_H + 10}`);
+
+    (function buildNet() {
+      let html = '';
+      const strCol  = 'rgba(255,255,255,0.50)';
+      const loopCol = 'rgba(255,255,255,0.34)';
+      for (let i = 0; i < NET_STRINGS; i++) {
+        const t  = i / (NET_STRINGS - 1);
+        const xT = t * NET_W;
+        const xB = NET_W * 0.13 + t * NET_W * 0.74;
+        html += `<line x1="${xT.toFixed(1)}" y1="0" x2="${xB.toFixed(1)}" y2="${NET_H}" stroke="${strCol}" stroke-width="1.4" stroke-linecap="round"/>`;
+      }
+      for (let lv = 1; lv <= 4; lv++) {
+        const lvt    = lv / 5;
+        const y      = lvt * NET_H;
+        const sagAmt = 3 + lv * 1.8;
+        let d = '';
+        for (let i = 0; i < NET_STRINGS - 1; i++) {
+          const t0 = i / (NET_STRINGS - 1), t1 = (i + 1) / (NET_STRINGS - 1);
+          const x0 = (t0 * NET_W) + ((NET_W * 0.13 + t0 * NET_W * 0.74) - t0 * NET_W) * lvt;
+          const x1 = (t1 * NET_W) + ((NET_W * 0.13 + t1 * NET_W * 0.74) - t1 * NET_W) * lvt;
+          const cx = (x0 + x1) / 2;
+          if (i === 0) d += `M${x0.toFixed(1)},${y.toFixed(1)}`;
+          d += ` Q${cx.toFixed(1)},${(y + sagAmt).toFixed(1)} ${x1.toFixed(1)},${y.toFixed(1)}`;
+        }
+        html += `<path d="${d}" fill="none" stroke="${loopCol}" stroke-width="1.2" stroke-linecap="round"/>`;
+      }
+      netSvg.innerHTML = html;
+    })();
+
+    // Hoop hint position (point 3)
+    const hoopHint = document.getElementById('hoop-hint');
+    hoopHint.style.cssText = `left:${Math.max(12, RIM_L_X - 162)}px; top:${HOOP_Y - 60}px;`;
+
+    /* ─────────────────────────────────────────
+       MATTER.JS ENGINE
+    ───────────────────────────────────────── */
+    const engine = Engine.create({ gravity: { x: 0, y: 1.1 } });
+    const world  = engine.world;
+    const runner = Runner.create();
+    const stage  = document.getElementById('stage');
+
+    const sOpts = { isStatic: true };
+    World.add(world, [
+      Bodies.rectangle(W / 2, H + 40,    W + 200, 80, { ...sOpts, friction: .5,  restitution: .3 }),
+      Bodies.rectangle(-40,   H / 2,     80,     H*4, { ...sOpts, friction: .4,  restitution: .3 }),
+      Bodies.rectangle(W + 40, H / 2,    80,     H*4, { ...sOpts, friction: .4,  restitution: .3 }),
+      Bodies.rectangle(W / 2, -H * 2.5, W + 200, 80,  { ...sOpts, friction: .1,  restitution: .5 }),
+    ]);
+
+    const rimOpts = { isStatic: true, restitution: .55, friction: .35, label: 'rim' };
+    World.add(world, [
+      Bodies.circle(RIM_L_X, HOOP_Y, RIM_R, rimOpts),
+      Bodies.circle(RIM_R_X, HOOP_Y, RIM_R, rimOpts),
+      Bodies.rectangle(W - 6, HOOP_Y - 5, 12, 190, { ...sOpts, restitution: .45, friction: .6, label: 'board' }),
+      Bodies.rectangle(HOOP_CX, HOOP_Y + RIM_R + 6, OPENING - RIM_R * 2 - 6, 14, {
+        isStatic: true, isSensor: true, label: 'sensor',
+      }),
+    ]);
+
+    /* ─────────────────────────────────────────
+       PROJECTS + BALLS
+    ───────────────────────────────────────── */
+    const projects = [
+      { name: 'Resume\nBuilder',  cat: 'AI',     color: '#0a84ff', desc: 'AI-powered resume generation'     },
+      { name: 'Minute\nof Math',  cat: 'iOS',    color: '#ff9f0a', desc: 'Daily math challenges for iPhone' },
+      { name: 'News\nAggregator', cat: 'AI',     color: '#32ade6', desc: 'Curated headlines from the web'   },
+      { name: 'Athena',           cat: 'Python', color: '#30d158', desc: 'Intelligent task automation CLI'  },
+      { name: 'SkyHighStack',     cat: 'iOS',    color: '#ff453a', desc: 'Physics-based stacking game'      },
+      { name: 'URL\nShortener',   cat: 'Python', color: '#bf5af2', desc: 'Flask-powered link shortener'     },
+      { name: 'Space\nInvaders',  cat: 'Game',   color: '#ffd60a', desc: 'Classic arcade rebuilt in JS'     },
+      { name: 'Timekeeper',       cat: 'Web',    color: '#5e5ce6', desc: 'Worldwide time zone tracker'      },
+    ];
+
+    const bodies  = [];
+    const ballEls = [];
+    const inners  = [];
+
+    projects.forEach((p, i) => {
+      const x = W * .12 + (i / (projects.length - 1)) * W * .6 + (Math.random() - .5) * 55;
+      const y = -(BALL_R * 2) - 50 - i * 120;
+
+      const body = Bodies.circle(x, y, BALL_R, {
+        restitution: .48, friction: .3, frictionAir: .008, density: .002,
+      });
+      Body.setAngularVelocity(body, (Math.random() - .5) * .1);
+      World.add(world, body);
+      bodies.push(body);
+
+      const el = document.createElement('div');
+      el.className = 'ball';
+      el.style.width = el.style.height = D + 'px';
+      const light = shift(p.color, 36);
+      const dark  = shift(p.color, -28);
+      el.style.background = `radial-gradient(circle at 36% 30%, ${light} 0%, ${p.color} 42%, ${dark} 100%)`;
+      el.style.boxShadow  = `0 ${Math.round(BALL_R*.26)}px ${Math.round(BALL_R*.85)}px rgba(0,0,0,.58), 0 2px 6px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2)`;
+
+      // Seams (hidden by default, shown during game) — DOM first so shine layers above
+      const seams = document.createElement('div');
+      seams.className = 'bball-seams';
+      seams.innerHTML = SEAMS_SVG;
+      el.appendChild(seams);
+
+      const shine = document.createElement('div'); shine.className = 'ball-shine'; el.appendChild(shine);
+      const shade = document.createElement('div'); shade.className = 'ball-shade'; el.appendChild(shade);
+
+      const inner = document.createElement('div');
+      inner.className = 'ball-inner';
+      inner.innerHTML = `<span class="ball-cat">${p.cat}</span><span class="ball-name">${p.name.replace('\n','<br>')}</span>`;
+      el.appendChild(inner);
+      inners.push(inner);
+
+      el.addEventListener('mouseenter', e => showTip(p, e));
+      el.addEventListener('mousemove',  moveTip);
+      el.addEventListener('mouseleave', hideTip);
+      el.addEventListener('mousedown',  hideTip);
+      stage.appendChild(el);
+      ballEls.push(el);
+    });
+
+    /* ─────────────────────────────────────────
+       BALL APPEARANCE TOGGLE (point 4)
+    ───────────────────────────────────────── */
+    function setBallsBasketball() {
+      hideTip();
+      ballEls.forEach((el, i) => {
+        el.style.background = `radial-gradient(circle at 36% 30%, #f5a455 0%, #de5f0e 42%, #8a360a 100%)`;
+        el.querySelector('.bball-seams').style.display = 'block';
+        inners[i].style.opacity = '0';
+        el.style.pointerEvents = 'none';
+      });
+    }
+
+    function setBallsProject() {
+      ballEls.forEach((el, i) => {
+        const p = projects[i];
+        const light = shift(p.color, 36);
+        const dark  = shift(p.color, -28);
+        el.style.background = `radial-gradient(circle at 36% 30%, ${light} 0%, ${p.color} 42%, ${dark} 100%)`;
+        el.querySelector('.bball-seams').style.display = 'none';
+        inners[i].style.opacity = '';
+        el.style.pointerEvents = '';
+      });
+    }
+
+    /* ─────────────────────────────────────────
+       MOUSE CONSTRAINT + THROW
+    ───────────────────────────────────────── */
+    const mouse = Mouse.create(stage);
+    const mc    = MouseConstraint.create(engine, {
+      mouse,
+      constraint: { stiffness: .07, damping: .015, render: { visible: false } },
+    });
+    World.add(world, mc);
+
+    let mvx = 0, mvy = 0, pmx = 0, pmy = 0;
+    document.addEventListener('mousemove', e => {
+      mvx = mvx * .55 + (e.clientX - pmx) * .45;
+      mvy = mvy * .55 + (e.clientY - pmy) * .45;
+      pmx = e.clientX; pmy = e.clientY;
+    });
+
+    let dragBody = null;
+    Events.on(mc, 'startdrag', e => { dragBody = e.body; mvx = 0; mvy = 0; });
+    Events.on(mc, 'enddrag',   e => {
+      if (dragBody) {
+        Body.setVelocity(dragBody, { x: mvx * 2.6, y: mvy * 2.6 });
+        dragBody = null;
+      }
+    });
+
+    /* ─────────────────────────────────────────
+       SCORE DETECTION
+    ───────────────────────────────────────── */
+    const scoreCooldown = new Set();
+
+    Events.on(engine, 'collisionStart', ({ pairs }) => {
+      pairs.forEach(({ bodyA, bodyB }) => {
+        const isSensor = bodyA.label === 'sensor' || bodyB.label === 'sensor';
+        if (!isSensor) return;
+        const ball = bodyA.label === 'sensor' ? bodyB : bodyA;
+        if (ball.velocity.y > 0.6 && !scoreCooldown.has(ball.id)) {
+          scoreCooldown.add(ball.id);
+          setTimeout(() => scoreCooldown.delete(ball.id), 1800);
+          onScore(ball);
+        }
+      });
+    });
+
+    /* ─────────────────────────────────────────
+       NET ANIMATION
+    ───────────────────────────────────────── */
+    function triggerNet() {
+      netSvg.classList.remove('net-swoosh');
+      void netSvg.offsetWidth;
+      netSvg.classList.add('net-swoosh');
+      setTimeout(() => netSvg.classList.remove('net-swoosh'), 800);
+    }
+
+    /* ─────────────────────────────────────────
+       SCORE POP
+    ───────────────────────────────────────── */
+    function spawnScorePop(x, y) {
+      const el = document.createElement('div');
+      el.className = 'score-pop';
+      el.textContent = '+1';
+      el.style.left = (x - 16) + 'px';
+      el.style.top  = (y - 20) + 'px';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 950);
+    }
+
+    /* ─────────────────────────────────────────
+       STADIUM LIGHTS / STROBE (point 6)
+    ───────────────────────────────────────── */
+    const strobeEl = document.getElementById('strobe-overlay');
+
+    function startStrobeCountdown() {
+      strobeEl.classList.remove('strobe-gameover');
+      void strobeEl.offsetWidth;
+      strobeEl.classList.add('strobe-countdown');
+    }
+    function startStrobeOver() {
+      strobeEl.classList.remove('strobe-countdown');
+      void strobeEl.offsetWidth;
+      strobeEl.classList.add('strobe-gameover');
+    }
+    function stopStrobe() {
+      strobeEl.classList.remove('strobe-countdown', 'strobe-gameover');
+    }
+
+    /* ─────────────────────────────────────────
+       GAME STATE MACHINE
+    ───────────────────────────────────────── */
+    let gamePhase  = 'idle';
+    let score      = 0;
+    let timeLeft   = 30;
+    let gameTimer  = null;
+    let cdTimer    = null;
+    let cdVal      = 3;
+    let finalScore = 0;
+
+    const bgSubtitle = document.getElementById('bg-subtitle');
+
+    function showPhase(phase) {
+      document.querySelectorAll('#phase-countdown, #phase-playing, #phase-over')
+        .forEach(el => el.classList.remove('active'));
+      if (phase) document.getElementById('phase-' + phase).classList.add('active');
+    }
+
+    function fmtTime(s) { return `${Math.floor(s / 60)}:${String(s % 60).padStart(2,'0')}`; }
+
+    function onScore(ball) {
+      triggerNet();
+      spawnScorePop(HOOP_CX, HOOP_Y);
+      if (gamePhase === 'idle' || gamePhase === 'over') {
+        startCountdown();
+      } else if (gamePhase === 'playing') {
+        score++;
+        document.getElementById('ui-score').textContent = score;
+      }
+    }
+
+    function startCountdown() {
+      if (gamePhase === 'countdown') return;
+      clearTimeout(cdTimer);
+      gamePhase = 'countdown';
+      cdVal     = 3;
+      showPhase('countdown');
+      document.getElementById('cd-num').textContent = cdVal;
+      // Hide scribble hint (point 3)
+      hoopHint.style.opacity = '0';
+      // Start warm strobe (point 6)
+      startStrobeCountdown();
+
+      function tick() {
+        cdVal--;
+        if (cdVal <= 0) { startGame(); return; }
+        document.getElementById('cd-num').textContent = cdVal;
+        cdTimer = setTimeout(tick, 1000);
+      }
+      cdTimer = setTimeout(tick, 1000);
+    }
+
+    function startGame() {
+      gamePhase = 'playing';
+      score     = 0;
+      timeLeft  = 30;
+      showPhase('playing');
+      document.getElementById('ui-timer').textContent = fmtTime(timeLeft);
+      document.getElementById('ui-score').textContent = score;
+      document.getElementById('ui-timer').classList.remove('flash-red');
+      document.getElementById('ui-score').classList.remove('flash-red');
+
+      stopStrobe();              // point 6: stop countdown strobe
+      setBallsBasketball();      // point 4: convert to basketballs
+      bgSubtitle.classList.add('show');  // point 9: show subtitle
+
+      clearInterval(gameTimer);
+      gameTimer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('ui-timer').textContent = fmtTime(timeLeft);
+        if (timeLeft <= 5) document.getElementById('ui-timer').classList.add('flash-red');
+        if (timeLeft <= 0) { clearInterval(gameTimer); endGame(); }
+      }, 1000);
+    }
+
+    function endGame() {
+      gamePhase  = 'over';
+      finalScore = score;
+      showPhase('over');
+      document.getElementById('over-timer').textContent = '0:00';
+      document.getElementById('over-score').textContent = finalScore;
+      startStrobeOver();  // point 6: red strobe
+
+      setTimeout(() => {
+        showPhase(null);
+        gamePhase = 'idle';
+        score     = 0;
+        stopStrobe();
+        setBallsProject();   // point 4: restore app balls
+        bgSubtitle.classList.remove('show');  // point 9
+        hoopHint.style.opacity = '1';         // point 3: restore hint
+        resetBalls();
+      }, 5000);
+    }
+
+    function resetBalls() {
+      scoreCooldown.clear();
+      bodies.forEach((body, i) => {
+        const x = W * .12 + (i / (projects.length - 1)) * W * .6 + (Math.random() - .5) * 55;
+        const y = -(BALL_R * 2) - 50 - i * 120;
+        Body.setPosition(body, { x, y });
+        Body.setVelocity(body, { x: (Math.random() - .5) * 2, y: 0 });
+        Body.setAngularVelocity(body, (Math.random() - .5) * .1);
+        Body.setAngle(body, 0);
+      });
+    }
+
+    // End game button (point 5)
+    document.getElementById('btn-end-game').addEventListener('click', () => {
+      if (gamePhase === 'playing') {
+        clearInterval(gameTimer);
+        endGame();
+      }
+    });
+
+    /* ─────────────────────────────────────────
+       RENDER LOOP
+    ───────────────────────────────────────── */
+    Runner.run(runner, engine);
+
+    (function loop() {
+      bodies.forEach((body, i) => {
+        const { x, y } = body.position;
+        const a = body.angle;
+        ballEls[i].style.transform = `translate(${x - BALL_R}px, ${y - BALL_R}px) rotate(${a}rad)`;
+        inners[i].style.transform  = `rotate(${-a}rad)`;
+      });
+      requestAnimationFrame(loop);
+    })();
+
+    /* ─────────────────────────────────────────
+       TOOLTIP
+    ───────────────────────────────────────── */
+    const tip = document.getElementById('tip');
+    function showTip(p, e) {
+      if (gamePhase === 'playing' || gamePhase === 'countdown') return;
+      tip.querySelector('.tip-name').textContent = p.name.replace('\n', ' ');
+      tip.querySelector('.tip-desc').textContent = p.desc;
+      tip.classList.add('show');
+      moveTip(e);
+    }
+    function moveTip(e) {
+      tip.style.left = Math.min(e.clientX + 18, W - 228) + 'px';
+      tip.style.top  = (e.clientY - 58) + 'px';
+    }
+    function hideTip() { tip.classList.remove('show'); }
+
+    /* ─────────────────────────────────────────
+       HINTS
+    ───────────────────────────────────────── */
+    setTimeout(() => { document.getElementById('hint').style.opacity = '0'; }, 4500);
+
+    /* ─────────────────────────────────────────
+       COLOR HELPER
+    ───────────────────────────────────────── */
+    function shift(hex, amt) {
+      const r = Math.max(0, Math.min(255, parseInt(hex.slice(1,3),16) + amt));
+      const g = Math.max(0, Math.min(255, parseInt(hex.slice(3,5),16) + amt));
+      const b = Math.max(0, Math.min(255, parseInt(hex.slice(5,7),16) + amt));
+      return `rgb(${r},${g},${b})`;
+    }
+  </script>
+</body>
+</html>

@@ -443,9 +443,9 @@
 
     const sOpts = { isStatic: true };
     World.add(world, [
-      Bodies.rectangle(W / 2, H + 40,    W + 200, 80, { ...sOpts, friction: .5,  restitution: .3 }),
-      Bodies.rectangle(-40,   H / 2,     80,     H*4, { ...sOpts, friction: .4,  restitution: .3 }),
-      Bodies.rectangle(W + 40, H / 2,    80,     H*4, { ...sOpts, friction: .4,  restitution: .3 }),
+      Bodies.rectangle(W / 2, H + 40,    W + 200, 80, { ...sOpts, friction: .4,  restitution: .55 }),
+      Bodies.rectangle(-40,   H / 2,     80,     H*4, { ...sOpts, friction: .3,  restitution: .48 }),
+      Bodies.rectangle(W + 40, H / 2,    80,     H*4, { ...sOpts, friction: .3,  restitution: .48 }),
       Bodies.rectangle(W / 2, -H * 2.5, W + 200, 80,  { ...sOpts, friction: .1,  restitution: .5 }),
     ]);
 
@@ -482,9 +482,10 @@
       const y = -(BALL_R * 2) - 50 - i * 120;
 
       const body = Bodies.circle(x, y, BALL_R, {
-        restitution: .48, friction: .3, frictionAir: .008, density: .002,
+        restitution: .75, friction: .25, frictionAir: .006, density: .002,
       });
-      Body.setAngularVelocity(body, (Math.random() - .5) * .1);
+      Body.setVelocity(body, { x: (Math.random() - .5) * 5, y: 0 });
+      Body.setAngularVelocity(body, (Math.random() - .5) * .28);
       World.add(world, body);
       bodies.push(body);
 
@@ -732,8 +733,8 @@
         const x = W * .12 + (i / (projects.length - 1)) * W * .6 + (Math.random() - .5) * 55;
         const y = -(BALL_R * 2) - 50 - i * 120;
         Body.setPosition(body, { x, y });
-        Body.setVelocity(body, { x: (Math.random() - .5) * 2, y: 0 });
-        Body.setAngularVelocity(body, (Math.random() - .5) * .1);
+        Body.setVelocity(body, { x: (Math.random() - .5) * 5, y: 0 });
+        Body.setAngularVelocity(body, (Math.random() - .5) * .28);
         Body.setAngle(body, 0);
       });
     }
